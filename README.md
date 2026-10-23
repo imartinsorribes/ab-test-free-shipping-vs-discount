@@ -1,84 +1,95 @@
-# Test A/B de ofertas en e-commerce: "10% de descuento" vs "Envío gratis"
+# A/B Test: Free Shipping vs 10% Discount in E-commerce
 
-Análisis completo de un experimento A/B para decidir qué oferta mostrar en la página de producto de una tienda online,
-desde el diseño (tamaño muestral) hasta la recomendación de negocio, combinando estadística **frecuentista** y **bayesiana**.
+End-to-end analysis of an A/B experiment to decide which offer to show on an online store's product page, from experiment
+design (sample size) to a business recommendation, combining **frequentist** and **Bayesian** statistics.
 
-| Variante | Oferta |
+| Variant | Offer |
 |---|---|
-| **A** (control) | 10% de descuento en el pedido |
-| **B** (tratamiento) | Envío gratis en pedidos ≥ 40 € |
+| **A** (control) | 10% off the order |
+| **B** (treatment) | Free shipping on orders ≥ €40 |
 
-## Resultado principal
+## Key results
 
-| Métrica | A | B | Lift | Significativo |
+| Metric | A | B | Lift | Significant |
 |---|---|---|---|---|
-| Tasa de conversión | 3,59% | 4,07% | **+13,2%** | Sí (p = 0,0002) |
-| Ingreso por visitante | 1,69 € | 2,11 € | **+24,8%** | Sí (p < 0,001) |
-| Beneficio por visitante | 0,56 € | 0,70 € | **+24,8%** | Sí (p < 0,001) |
-| Ticket medio | 46,99 € | 51,79 € | **+10,2%** | Sí (p < 0,001) |
+| Conversion rate | 3.59% | 4.07% | **+13.2%** | Yes (p = 0.0002) |
+| Revenue per visitor | €1.69 | €2.11 | **+24.8%** | Yes (p < 0.001) |
+| Profit per visitor | €0.56 | €0.70 | **+24.8%** | Yes (p < 0.001) |
+| Average order value | €46.99 | €51.79 | **+10.2%** | Yes (p < 0.001) |
 
-- **P(B > A) = 99,99%** según el modelo bayesiano Beta-Binomial.
-- Impacto estimado: **+13.400 €/mes de beneficio** (IC 95%: +8.700 € a +18.000 €).
-- El efecto se concentra en **móvil** (+19%); en escritorio no es concluyente.
+- **P(B > A) = 99.99%** under a Beta-Binomial Bayesian model.
+- Estimated impact: **+€13,400/month in profit** (95% CI: +€8,700 to +€18,000).
+- The effect is concentrated on **mobile** (+19%); inconclusive on desktop.
 
-**Recomendación:** lanzar la oferta de envío gratis. Aunque la tienda asume el coste del envío, los clientes añaden productos
-para llegar a los 40 € y el beneficio por visitante sube un 25%.
+**Recommendation:** roll out free shipping. Even though the store absorbs the shipping cost, customers add items to reach
+the €40 threshold and profit per visitor rises by 25%.
 
-![Conversión por variante](reports/figures/01_conversion_ic.png)
-![Bootstrap del beneficio](reports/figures/02_bootstrap_beneficio.png)
-![Lift por segmento](reports/figures/04_lift_por_segmento.png)
+![Conversion by variant](reports/figures/01_conversion_ci.png)
+![Profit bootstrap](reports/figures/02_profit_bootstrap.png)
+![Lift by segment](reports/figures/04_lift_by_segment.png)
 
-## Qué incluye el análisis
+## Guardrail metrics
 
-1. **Diseño del experimento**: cálculo del tamaño muestral a partir del efecto mínimo detectable (MDE), α y potencia.
-2. **Sanity checks**: test de *Sample Ratio Mismatch* (SRM) y balance de covariables entre grupos.
-3. **Métrica principal**: z-test de dos proporciones con intervalo de confianza de la diferencia.
-4. **Métricas secundarias**: t-test de Welch e intervalos **bootstrap** para métricas muy asimétricas (ingreso y beneficio por visitante).
-5. **Enfoque bayesiano**: probabilidad de que B supere a A y pérdida esperada de cada decisión.
-6. **Segmentos**: análisis por dispositivo, tipo de usuario y canal con corrección **Holm-Bonferroni** por comparaciones múltiples.
-7. **Evolución temporal**: conversión acumulada y por qué no hay que parar el test antes de tiempo (*peeking*).
-8. **Impacto de negocio** y recomendación.
+A winning offer must not break something else. **Shipping cost per order** is checked through profit per visitor, which nets it out
+(it goes up, so the guardrail holds). **Return rate** and **cancelled orders** are monitored for 30 days after launch, since free
+shipping can drive customers to add items just to reach €40 and send them back; checkout **latency and errors** must not increase.
 
-👉 El análisis completo, explicado paso a paso, está en [`notebooks/analisis_ab_test.ipynb`](notebooks/analisis_ab_test.ipynb).
+## What the analysis covers
 
-## Datos
+1. **Experiment design**: sample size from the minimum detectable effect (MDE), α and power.
+2. **Sanity checks**: *Sample Ratio Mismatch* (SRM) test and covariate balance between groups.
+3. **Guardrail metrics**: what must not get worse for the launch to go ahead.
+4. **Primary metric**: two-proportion z-test with a confidence interval for the difference.
+5. **Secondary metrics**: Welch's t-test and **bootstrap** intervals for highly skewed metrics (revenue and profit per visitor).
+6. **Bayesian approach**: probability that B beats A and expected loss of each decision.
+7. **Segments**: by device, user type and channel, with **Holm-Bonferroni** correction for multiple comparisons.
+8. **Evolution over time**: cumulative conversion and why a test should not be stopped early (*peeking*).
+9. **Business impact** and recommendation.
 
-Los datos son **simulados** con [`src/generate_data.py`](src/generate_data.py) (90.000 visitantes, 28 días) a partir de un modelo
-con un efecto real conocido. Esto permite **validar el método**: el análisis recupera el efecto que se introdujo
-(lift fuerte en móvil, débil en escritorio) y además muestra cómo el troceo por segmentos puede generar falsos positivos.
+👉 The full, step-by-step analysis is in [`notebooks/ab_test_analysis.ipynb`](notebooks/ab_test_analysis.ipynb).
+Methodological choices (Holm vs Bonferroni, expected loss, when to stop a test, CUPED…) are explained in [`docs/METHODOLOGY.md`](docs/METHODOLOGY.md).
 
-Cada fila es un visitante:
+## Data
 
-| Columna | Descripción |
+The data is **simulated** with [`src/generate_data.py`](src/generate_data.py) (90,000 visitors, 28 days) from a model with a
+known true effect. This makes it possible to **validate the method**: the analysis recovers the effect that was introduced
+(strong lift on mobile, weak on desktop) and also shows how slicing by segments can produce false positives.
+
+Each row is a visitor:
+
+| Column | Description |
 |---|---|
-| `user_id`, `date` | Identificador y día de la visita |
-| `variant` | Variante asignada (A / B) |
-| `device`, `user_type`, `source` | Dispositivo, nuevo/recurrente y canal de adquisición |
-| `converted` | 1 si compró |
-| `revenue` | Ingreso por productos (con el descuento aplicado en A) |
-| `profit` | Ingreso − coste del producto − envío asumido por la tienda |
+| `user_id`, `date` | Visitor ID and day of the visit |
+| `variant` | Assigned variant (A / B) |
+| `device`, `user_type`, `source` | Device, new/returning user and acquisition channel |
+| `converted` | 1 if they purchased |
+| `revenue` | Product revenue (with the discount applied in A) |
+| `profit` | Revenue − product cost − shipping absorbed by the store |
 
-## Estructura
+## Project structure
 
 ```
-├── data/experiment_data.csv        # Dataset del experimento
-├── notebooks/analisis_ab_test.ipynb # Análisis completo y conclusiones
-├── reports/figures/                 # Gráficos generados
+├── data/experiment_data.csv          # Experiment dataset
+├── docs/METHODOLOGY.md               # Methodological choices explained
+├── notebooks/ab_test_analysis.ipynb  # Full analysis and conclusions
+├── reports/figures/                  # Generated charts
 ├── src/
-│   ├── generate_data.py             # Simulación del experimento
-│   └── ab_stats.py                  # Funciones estadísticas reutilizables
-└── tests/test_ab_stats.py           # Tests unitarios de las funciones estadísticas
+│   ├── generate_data.py              # Experiment simulation
+│   └── ab_stats.py                   # Reusable statistical functions
+└── tests/test_ab_stats.py            # Unit tests for the statistical functions
 ```
 
-## Cómo ejecutarlo
+## How to run it
 
 ```bash
+git clone https://github.com/imartinsorribes/ab-test-free-shipping-vs-discount.git
+cd ab-test-free-shipping-vs-discount
 pip install -r requirements.txt
-python src/generate_data.py       # regenera los datos (opcional, ya están incluidos)
-pytest tests                      # comprueba las funciones estadísticas
-jupyter notebook notebooks/analisis_ab_test.ipynb
+python src/generate_data.py       # regenerates the data (optional, already included)
+pytest tests                      # tests the statistical functions
+jupyter notebook notebooks/ab_test_analysis.ipynb
 ```
 
-## Tecnologías
+## Tech stack
 
 Python · pandas · NumPy · SciPy · Matplotlib · Jupyter · pytest

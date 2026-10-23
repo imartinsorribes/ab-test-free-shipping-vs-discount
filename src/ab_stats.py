@@ -1,8 +1,8 @@
 """
-Funciones estadísticas para analizar un test A/B.
+Statistical functions to analyse an A/B test.
 
-Incluye el enfoque frecuentista (tamaño muestral, SRM, z-test, Welch, bootstrap,
-corrección por comparaciones múltiples) y el bayesiano (Beta-Binomial).
+Covers the frequentist approach (sample size, SRM, z-test, Welch, bootstrap,
+multiple-comparison correction) and the Bayesian one (Beta-Binomial).
 """
 
 from dataclasses import dataclass
@@ -30,7 +30,7 @@ class TestResult:
 def sample_size_proportions(
     p_base: float, mde_rel: float, alpha: float = 0.05, power: float = 0.80
 ) -> int:
-    """Visitantes necesarios POR VARIANTE para detectar un lift relativo `mde_rel`."""
+    """Visitors needed PER VARIANT to detect a relative lift of `mde_rel`."""
     p_new = p_base * (1 + mde_rel)
     z_alpha = stats.norm.ppf(1 - alpha / 2)
     z_beta = stats.norm.ppf(power)
@@ -39,10 +39,10 @@ def sample_size_proportions(
 
 
 def srm_check(n_a: int, n_b: int, expected_share_a: float = 0.5) -> float:
-    """Sample Ratio Mismatch: p-valor chi-cuadrado del reparto de tráfico.
+    """Sample Ratio Mismatch: chi-square p-value of the traffic split.
 
-    Un p-valor muy bajo (< 0.001) indica que la asignación está rota y que los
-    resultados del test no son fiables.
+    A very low p-value (< 0.001) means the assignment is broken and the test
+    results cannot be trusted.
     """
     total = n_a + n_b
     expected = [total * expected_share_a, total * (1 - expected_share_a)]
@@ -52,7 +52,7 @@ def srm_check(n_a: int, n_b: int, expected_share_a: float = 0.5) -> float:
 def two_proportion_ztest(
     x_a: int, n_a: int, x_b: int, n_b: int, alpha: float = 0.05, metric: str = "conversion"
 ) -> TestResult:
-    """Z-test de dos proporciones (H0: p_a == p_b) con IC de la diferencia."""
+    """Two-proportion z-test (H0: p_a == p_b) with a CI for the difference."""
     p_a, p_b = x_a / n_a, x_b / n_b
     p_pool = (x_a + x_b) / (n_a + n_b)
     se_pool = np.sqrt(p_pool * (1 - p_pool) * (1 / n_a + 1 / n_b))
@@ -70,7 +70,7 @@ def two_proportion_ztest(
 def welch_ttest(
     a: np.ndarray, b: np.ndarray, alpha: float = 0.05, metric: str = "mean"
 ) -> TestResult:
-    """T-test de Welch para la diferencia de medias (no asume varianzas iguales)."""
+    """Welch's t-test for the difference in means (does not assume equal variances)."""
     a, b = np.asarray(a, dtype=float), np.asarray(b, dtype=float)
     res = stats.ttest_ind(b, a, equal_var=False)
     ci = res.confidence_interval(confidence_level=1 - alpha)
@@ -81,10 +81,10 @@ def welch_ttest(
 def bootstrap_mean_diff(
     a: np.ndarray, b: np.ndarray, n_boot: int = 5_000, alpha: float = 0.05, seed: int = 0
 ) -> tuple[float, float, np.ndarray]:
-    """IC bootstrap (percentil) de mean(b) - mean(a).
+    """Percentile bootstrap CI for mean(b) - mean(a).
 
-    Útil para métricas muy asimétricas como el ingreso por visitante, donde la
-    mayoría de valores son 0.
+    Useful for highly skewed metrics such as revenue per visitor, where most
+    values are 0.
     """
     rng = np.random.default_rng(seed)
     a, b = np.asarray(a, dtype=float), np.asarray(b, dtype=float)
@@ -98,10 +98,10 @@ def bootstrap_mean_diff(
 def bayesian_proportions(
     x_a: int, n_a: int, x_b: int, n_b: int, n_samples: int = 200_000, seed: int = 0
 ) -> dict:
-    """Modelo Beta-Binomial con prior uniforme Beta(1, 1).
+    """Beta-Binomial model with a uniform Beta(1, 1) prior.
 
-    Devuelve la probabilidad de que B sea mejor que A, el intervalo de
-    credibilidad del lift relativo y la pérdida esperada de elegir cada variante.
+    Returns the probability that B beats A, the credible interval of the
+    relative lift and the expected loss of choosing each variant.
     """
     rng = np.random.default_rng(seed)
     post_a = rng.beta(1 + x_a, 1 + n_a - x_a, n_samples)
@@ -119,7 +119,7 @@ def bayesian_proportions(
 
 
 def holm_correction(p_values: list[float]) -> np.ndarray:
-    """Ajuste de Holm-Bonferroni para comparaciones múltiples."""
+    """Holm-Bonferroni adjustment for multiple comparisons."""
     p = np.asarray(p_values, dtype=float)
     order = np.argsort(p)
     m = len(p)

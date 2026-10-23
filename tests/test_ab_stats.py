@@ -9,7 +9,7 @@ import ab_stats as ab  # noqa: E402
 
 
 def test_sample_size_matches_reference_value():
-    # Valor de referencia: calculadora de Evan Miller (p=10%, MDE relativo 10%, α=0.05, potencia 80%)
+    # Reference value: Evan Miller's calculator (p=10%, relative MDE 10%, alpha=0.05, power 80%)
     assert ab.sample_size_proportions(0.10, 0.10) == pytest.approx(14_750, rel=0.01)
 
 
