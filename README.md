@@ -34,6 +34,29 @@ A winning offer must not break something else. **Shipping cost per order** is ch
 (it goes up, so the guardrail holds). **Return rate** and **cancelled orders** are monitored for 30 days after launch, since free
 shipping can drive customers to add items just to reach €40 and send them back; checkout **latency and errors** must not increase.
 
+## Real-data case: Cookie Cats retention
+
+The main analysis uses simulated data, so the same toolkit (`src/ab_stats.py`) is also applied to a **real experiment**: the
+public *Cookie Cats* mobile-game dataset (90,189 players), where the first gate (a forced wait-or-pay break) was moved from
+**level 30 to level 40**. It is the same decision as moving a paywall or free-tier limit: where should the first friction go
+to protect **activation and retention**?
+
+| Metric | Gate 30 (A) | Gate 40 (B) | Difference | Significant |
+|---|---|---|---|---|
+| 1-day retention (activation) | 44.82% | 44.23% | −0.59 pp | No (p = 0.074) |
+| **7-day retention** (primary) | 19.02% | 18.20% | **−0.82 pp (−4.3%)** | Yes (p = 0.002, Holm 0.003) |
+| Median rounds played (14 days) | 17 | 16 | −1 | No gain |
+
+- **P(gate 40 > gate 30) = 0.08%** for 7-day retention; bootstrap and z-test CIs agree ([−1.33, −0.31] pp).
+- `sum_gamerounds` is heavy-tailed: **one player with 49,854 rounds** accounts for the whole difference in means, so
+  engagement is compared with the median, a trimmed mean and Mann-Whitney instead.
+- SRM p = 0.009: above the 0.001 alarm, but flagged for a logging check.
+
+**Recommendation:** keep the gate at level 30. Moving it costs ~820 day-7 players per 100,000 installs with no engagement gain.
+Full analysis: [`notebooks/cookie_cats_retention.ipynb`](notebooks/cookie_cats_retention.ipynb).
+
+![Cookie Cats retention](reports/figures/cookie_cats_retention_ci.png)
+
 ## What the analysis covers
 
 1. **Experiment design**: sample size from the minimum detectable effect (MDE), α and power.
@@ -69,9 +92,13 @@ Each row is a visitor:
 ## Project structure
 
 ```
-├── data/experiment_data.csv          # Experiment dataset
+├── data/
+│   ├── experiment_data.csv           # Simulated experiment dataset
+│   └── cookie_cats/cookie_cats.csv   # Real Cookie Cats dataset (public)
 ├── docs/METHODOLOGY.md               # Methodological choices explained
-├── notebooks/ab_test_analysis.ipynb  # Full analysis and conclusions
+├── notebooks/
+│   ├── ab_test_analysis.ipynb        # Full analysis and conclusions
+│   └── cookie_cats_retention.ipynb   # Real-data retention case
 ├── reports/figures/                  # Generated charts
 ├── src/
 │   ├── generate_data.py              # Experiment simulation
@@ -88,7 +115,11 @@ pip install -r requirements.txt
 python src/generate_data.py       # regenerates the data (optional, already included)
 pytest tests                      # tests the statistical functions
 jupyter notebook notebooks/ab_test_analysis.ipynb
+jupyter notebook notebooks/cookie_cats_retention.ipynb
 ```
+
+The Cookie Cats CSV comes from the public *Mobile Games A/B Testing with Cookie Cats* dataset (DataCamp / Kaggle), via the
+mirror at [robguilarr/ab_testing_cookie_cats](https://github.com/robguilarr/ab_testing_cookie_cats).
 
 ## Tech stack
 

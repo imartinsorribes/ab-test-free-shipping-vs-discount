@@ -86,11 +86,22 @@ def bootstrap_mean_diff(
     Useful for highly skewed metrics such as revenue per visitor, where most
     values are 0.
     """
+    return bootstrap_stat_diff(a, b, np.mean, n_boot=n_boot, alpha=alpha, seed=seed)
+
+
+def bootstrap_stat_diff(
+    a: np.ndarray, b: np.ndarray, stat, n_boot: int = 5_000, alpha: float = 0.05, seed: int = 0
+) -> tuple[float, float, np.ndarray]:
+    """Percentile bootstrap CI for stat(b) - stat(a), for any statistic.
+
+    Use it with the median or a trimmed mean when a few extreme values
+    dominate the mean (e.g. heavy-tailed engagement metrics).
+    """
     rng = np.random.default_rng(seed)
     a, b = np.asarray(a, dtype=float), np.asarray(b, dtype=float)
     boot = np.empty(n_boot)
     for i in range(n_boot):
-        boot[i] = rng.choice(b, b.size).mean() - rng.choice(a, a.size).mean()
+        boot[i] = stat(rng.choice(b, b.size)) - stat(rng.choice(a, a.size))
     low, high = np.quantile(boot, [alpha / 2, 1 - alpha / 2])
     return low, high, boot
 

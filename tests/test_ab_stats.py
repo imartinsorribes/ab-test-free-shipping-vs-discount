@@ -41,6 +41,24 @@ def test_welch_and_bootstrap_agree():
     assert welch.ci_high == pytest.approx(hi, abs=0.05)
 
 
+def test_bootstrap_median_ignores_outlier():
+    rng = np.random.default_rng(0)
+    a = rng.exponential(10, 2_000)
+    b = a.copy()
+    b[0] = 1e6  # one extreme value: shifts the mean a lot, the median not at all
+    lo_mean, hi_mean, _ = ab.bootstrap_mean_diff(a, b, n_boot=1_000)
+    lo_med, hi_med, _ = ab.bootstrap_stat_diff(a, b, np.median, n_boot=1_000)
+    assert hi_mean - lo_mean > 100
+    assert lo_med < 0 < hi_med
+    assert hi_med - lo_med < 2
+
+
+def test_bootstrap_stat_diff_matches_mean_version():
+    rng = np.random.default_rng(1)
+    a, b = rng.normal(0, 1, 500), rng.normal(0.2, 1, 500)
+    assert ab.bootstrap_mean_diff(a, b, n_boot=200)[:2] == ab.bootstrap_stat_diff(a, b, np.mean, n_boot=200)[:2]
+
+
 def test_bayesian_probability_is_symmetric():
     res = ab.bayesian_proportions(500, 10_000, 500, 10_000)
     assert res["prob_b_better"] == pytest.approx(0.5, abs=0.01)
